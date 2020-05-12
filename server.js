@@ -10,22 +10,27 @@ const app = express();
 
 app.use(cors());
 
-function Location(param) {
+function Location(param, city) {
+  this.search_query = city
   this.formatted_query = param.display_name
   this.latitude = param.lat
+  this.longitude = param.lon
 }
 
 app.get('/location', (req, res)  =>  {
   const location = require('./data/location.json');
-  const getCoordLat = location[0].lat
-  const getCoordLon = location[0].lon
-  const coordinates = [];
+  const city = req.query.city;
+  let newLocation = new Location(location[0], city)
+  
+  // const getCoordLat = location[0].lat
+  // const getCoordLon = location[0].lon
+  // const coordinates = [];
 
-  coordinates.push(getCoordLat);
-  coordinates.push(getCoordLon);
-  console.log(getCoordLat)
+  // coordinates.push(getCoordLat);
+  // coordinates.push(getCoordLon);
+  // console.log(getCoordLat)
 
-  res.send(coordinates);
+  res.send(newLocation);
 });
 
 app.get('/weather', (req, res) =>  {
