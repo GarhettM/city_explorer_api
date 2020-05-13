@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 const superagent = require('superagent')
 
-
 app.use(cors());
 
 function Location(param, city) {
@@ -32,8 +31,8 @@ function Trails(tParam, city) {
   this.summary = tParam.summary;
   this.trail_url = tParam.trail_url;
   this.conditions = tParam.conditionStatus;
-  this.conditions_date = tParam.conditions_date 
-  this.condition_time = tParam.condition_time
+  this.condition_date = tParam.conditionDate.slice(0, 10); 
+  this.condition_time = tParam.conditionDate.slice(11, 19);
 }
 
 app.get('/location', (req, res)  =>  {
@@ -50,10 +49,9 @@ app.get('/location', (req, res)  =>  {
   };
   
   superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
-    // console.log(resultFromSuper);
+
     let newLocation = new Location(resultFromSuper.body[0], city);
     res.send(newLocation);
-    // console.log(resultFromSuper.body[0]);
     
     })
     .catch(error => {
@@ -65,47 +63,43 @@ app.get('/location', (req, res)  =>  {
 
 app.get('/weather', (req, res) =>  {
   const url = `http://api.weatherbit.io/v2.0/forecast/daily`
-  const city = req.query;
+
   const myKey = process.env.WEATHER_API_KEY;
-  // console.log(req.query)
-  
+
   const superQuery  = {
   key: myKey,
   lat: req.query.latitude,
   lon: req.query.longitude,
   format: 'json',
-  limit: 8,
+  days: 8,
   };
 
   superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
-    console.log(resultFromSuper.body.data[0]);
+
     let weatherApp = resultFromSuper.body.data.map(current => {  
- 
       return new Weather(current);
-    
     });
+    
     res.send(weatherApp);
+
   })
     .catch(error => {
       console.log(error);
       res.send(error).status(500);
     });  
-
-
 });
 
 app.get('/trails', (req, res) =>  {
   const url = `https://www.hikingproject.com/data/get-trails`
   const city = req.query;
   const myKey = process.env.TRAIL_API_KEY;
-  // console.log(req.query)
   
   const superQuery  = {
-  key: myKey,
-  lat: req.query.latitude,
-  lon: req.query.longitude,
-  format: 'json',
-  limit: 10,
+    key: myKey,
+    lat: req.query.latitude,
+    lon: req.query.longitude,
+    format: 'json',
+    maxResults: 5,
   };
 
   superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
@@ -121,12 +115,7 @@ app.get('/trails', (req, res) =>  {
       console.log(error);
       res.send(error).status(500);
     });  
-
-
 });
 
-
-
 app.listen(PORT, () => {
-  // console.log('We are on ', PORT);
 });
