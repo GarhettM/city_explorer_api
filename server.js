@@ -19,7 +19,7 @@ function Location(param, city) {
 }
 
 function Weather(wParam, city)  {
-  this.forcast = wParam.weather.description;
+  this.forecast = wParam.weather.description;
   this.time = wParam.valid_date;
 }
 
@@ -51,12 +51,29 @@ app.get('/location', (req, res)  =>  {
 });
 
 app.get('/weather', (req, res) =>  {
-  const weather = require('./data/weather.json')
+  const url = `http://api.weatherbit.io/v2.0/current`
   const city = req.query.city;
-  const weatherArr = weather.data.map(val =>  {
-    return new Weather(val, city);
-  })  
-  res.send(weatherArr);
+  const myKey = process.env.WEATHER_API_KEY;
+
+  const superQuery  = {
+  key: myKey,
+  // q: city,
+  format: 'json',
+  limit: 1,
+  };
+
+  superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
+    console.log(resultFromSuper);
+    let newLocation = new Location(resultFromSuper.body[0], city);
+    res.send(newLocation);
+    console.log(resultFromSuper.body[0]);
+    
+    })
+    .catch(error => {
+      console.log(error);
+      res.send(error).status(500);
+    });  
+
 });
 
 
