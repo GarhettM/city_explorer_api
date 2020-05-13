@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const PORT = process.env.PORT || 3000;
 const app = express();
+const superagent = require('superagent')
 
 
 app.use(cors());
@@ -23,30 +24,38 @@ function Weather(wParam, city)  {
 }
 
 app.get('/location', (req, res)  =>  {
-  const location = require('./data/location.json');
-  const city = req.query.city;
-  let newLocation = new Location(location[0], city);
-  
-  // const getCoordLat = location[0].lat
-  // const getCoordLon = location[0].lon
-  // const coordinates = [];
+  const url = `https://us1.locationiq.com/v1/search.php`
 
-  // coordinates.push(getCoordLat);
-  // coordinates.push(getCoordLon);
-  // console.log(getCoordLat)
-  console.log(newLocation);
-  res.send(newLocation);
+  const city = req.query.city;
+  const myKey = process.env.GEOCODE_API_KEY;
+  
+  const superQuery  = {
+    key: myKey,
+    q: city,
+    format: 'json',
+    limit: 1,
+  };
+  
+  superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
+    console.log(resultFromSuper);
+    let newLocation = new Location(resultFromSuper.body[0], city);
+    res.send(newLocation);
+    console.log(resultFromSuper.body[0]);
+    
+    })
+    .catch(error => {
+      console.log(error);
+      res.send(error).status(500);
+    });
+
 });
 
 app.get('/weather', (req, res) =>  {
   const weather = require('./data/weather.json')
   const city = req.query.city;
-  const weatherArr  = [];
-  for (let i = 0; i < weather.data.length; i++)  {
-    let newWeather = new Weather(weather.data[i], city);
-    console.log(newWeather);
-    weatherArr.push(newWeather);
-  }
+  const weatherArr = weather.data.map(val =>  {
+    return new Weather(val, city);
+  })  
   res.send(weatherArr);
 });
 
@@ -56,5 +65,5 @@ app.get('/weather', (req, res) =>  {
 
 
 app.listen(PORT, () => {
-  console.log(PORT);
+  console.log('We are on ', PORT);
 });
