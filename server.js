@@ -3,12 +3,17 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const pg = require('pg')
 
 const PORT = process.env.PORT || 3000;
 const app = express();
 const superagent = require('superagent')
 
 app.use(cors());
+
+const client = new pg.Client(process.env.DATABASE_URL);
+client.on('error', console.error);
+client.connect();
 
 function Location(param, city) {
   this.search_query = city;
@@ -35,9 +40,10 @@ function Trails(tParam, city) {
   this.condition_time = tParam.conditionDate.slice(11, 19);
 }
 
+
 app.get('/location', (req, res)  =>  {
   const url = `https://us1.locationiq.com/v1/search.php`
-
+  
   const city = req.query.city;
   const myKey = process.env.GEOCODE_API_KEY;
   
@@ -48,16 +54,36 @@ app.get('/location', (req, res)  =>  {
     limit: 1,
   };
   
-  superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
+  const sqlQuery = 'SELECT * FROM locations WHERE search_query=$1';
+  const sqlValues = [city];
+  client.query(sqlQuery, sqlValues)
+    .then(resultSql => {
+      // console.log(resultSql);
+      if (resultSql.rowCount > 0) {
+        res.send(resultSql.rows[0])
+      } else {
+        
+        superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
+      
+          let newLocation = new Location(resultFromSuper.body[0], city);
+          
+          // SAVE THIS STUFF TO DB
+          const sqlQuery = 'INSERT INTO locations (search_query, formatted-Query, lat, lon) VALUES(1$,2$,3$,4$)';
+          
+          const valueArray = [newLocation.search_query, newLocation.formatted_query, newLocation.lat, newLocation.lon];
+          
+          client.query(sqlQuery, valueArray);
 
-    let newLocation = new Location(resultFromSuper.body[0], city);
-    res.send(newLocation);
-    
+          res.send(newLocation);
+        })
+        .catch(error => {
+          console.log(error);
+          res.send(error).status(500);
+        })
+
+      }
     })
-    .catch(error => {
-      console.log(error);
-      res.send(error).status(500);
-    });
+
 
 });
 
@@ -86,7 +112,7 @@ app.get('/weather', (req, res) =>  {
     .catch(error => {
       console.log(error);
       res.send(error).status(500);
-    });  
+    }) 
 });
 
 app.get('/trails', (req, res) =>  {
@@ -103,7 +129,7 @@ app.get('/trails', (req, res) =>  {
   };
 
   superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
-    console.log(resultFromSuper.body.trails);
+    // console.log(resultFromSuper.body.trails);
     let trailApp = resultFromSuper.body.trails.map(current => {  
  
       return new Trails(current);
@@ -114,7 +140,7 @@ app.get('/trails', (req, res) =>  {
     .catch(error => {
       console.log(error);
       res.send(error).status(500);
-    });  
+    }) 
 });
 
 app.listen(PORT, () => {
