@@ -68,21 +68,21 @@ app.get('/location', (req, res)  =>  {
           let newLocation = new Location(resultFromSuper.body[0], city);
           
           // SAVE THIS STUFF TO DB
-          const sqlQuery = 'INSERT INTO locations (search_query, formatted-Query, lat, lon) VALUES(1$,2$,3$,4$)';
+          const sqlQuery = 'INSERT INTO locations (search_query, formatted_Query, lat, lon) VALUES($1,$2,$3,$4)';
           
-          const valueArray = [newLocation.search_query, newLocation.formatted_query, newLocation.lat, newLocation.lon];
+          const valueArray = [newLocation.search_query, newLocation.formatted_query, newLocation.latitude, newLocation.longitude];
           
           client.query(sqlQuery, valueArray);
 
           res.send(newLocation);
-        })
-        .catch(error => {
-          console.log(error);
-          res.send(error).status(500);
-        })
-
+        });
       }
+      
     })
+        .catch(error => {
+          // console.log(error);
+          res.send(error).status(500);
+    });
 
 
 });
@@ -110,7 +110,7 @@ app.get('/weather', (req, res) =>  {
 
   })
     .catch(error => {
-      console.log(error);
+      // console.log(error);
       res.send(error).status(500);
     }) 
 });
@@ -138,7 +138,7 @@ app.get('/trails', (req, res) =>  {
     res.send(trailApp);
   })
     .catch(error => {
-      console.log(error);
+      // console.log(error);
       res.send(error).status(500);
     }) 
 });
