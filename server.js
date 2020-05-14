@@ -60,15 +60,17 @@ app.get('/location', (req, res)  =>  {
     .then(resultSql => {
       // console.log(resultSql);
       if (resultSql.rowCount > 0) {
+        // console.log(resultSql)
+        console.log('its me ', resultSql.rows[0])
         res.send(resultSql.rows[0])
       } else {
         
         superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
       
           let newLocation = new Location(resultFromSuper.body[0], city);
-          
+          console.log(newLocation);
           // SAVE THIS STUFF TO DB
-          const sqlQuery = 'INSERT INTO locations (search_query, formatted_Query, lat, lon) VALUES($1,$2,$3,$4)';
+          const sqlQuery = 'INSERT INTO locations (search_query, formatted_Query, latitude, longitude) VALUES($1,$2,$3,$4)';
           
           const valueArray = [newLocation.search_query, newLocation.formatted_query, newLocation.latitude, newLocation.longitude];
           
