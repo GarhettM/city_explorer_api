@@ -22,12 +22,12 @@ function Location(param, city) {
   this.longitude = param.lon;
 }
 
-function Weather(wParam, city)  {
+function Weather(wParam)  {
   this.forecast = wParam.weather.description;
   this.time = wParam.valid_date;
 }
 
-function Trails(tParam, city) {
+function Trails(tParam) {
   this.name = tParam.name;
   this.location = tParam.location;
   this.length = tParam.length;
@@ -38,6 +38,24 @@ function Trails(tParam, city) {
   this.conditions = tParam.conditionStatus;
   this.condition_date = tParam.conditionDate.slice(0, 10); 
   this.condition_time = tParam.conditionDate.slice(11, 19);
+}
+
+function Movies(mParam) {
+  this.title = mParam.title;
+  this.overview = mParam.overview;
+  this.average_votes = mParam.vote_average;
+  this.total_votes = mParam.vote_count;
+  this.image_url = `https://image.tmdb.org/t/p/w500${mParam.poster_path}`;
+  this.popularity = mParam.popularity;
+  this.released_on = mParam.release_date;
+}
+
+function Yelp(mParam) {
+  this.name = mParam.name;
+  this.image_url = mParam.image_url;
+  this.price = mParam.price;
+  this.rating = mParam.rating;
+  this.url = mParam.url;
 }
 
 
@@ -90,10 +108,8 @@ app.get('/location', (req, res)  =>  {
 });
 
 app.get('/weather', (req, res) =>  {
-  const url = `http://api.weatherbit.io/v2.0/forecast/daily`
-
+  const url = `http://api.weatherbit.io/v2.0/forecast/daily`;
   const myKey = process.env.WEATHER_API_KEY;
-
   const superQuery  = {
   key: myKey,
   lat: req.query.latitude,
@@ -118,10 +134,8 @@ app.get('/weather', (req, res) =>  {
 });
 
 app.get('/trails', (req, res) =>  {
-  const url = `https://www.hikingproject.com/data/get-trails`
-  const city = req.query;
+  const url = `https://www.hikingproject.com/data/get-trails`;
   const myKey = process.env.TRAIL_API_KEY;
-  
   const superQuery  = {
     key: myKey,
     lat: req.query.latitude,
@@ -131,7 +145,6 @@ app.get('/trails', (req, res) =>  {
   };
 
   superagent.get(url).query(superQuery).then(resultFromSuper  =>  {
-    // console.log(resultFromSuper.body.trails);
     let trailApp = resultFromSuper.body.trails.map(current => {  
  
       return new Trails(current);
@@ -144,6 +157,53 @@ app.get('/trails', (req, res) =>  {
       res.send(error).status(500);
     }) 
 });
+
+app.get('/movies', (req, res) => {
+  const url = `https://api.themoviedb.org/3/search/movie`;
+  const myKey = process.env.MOVIES_API_KEY;
+  const superQuery = {
+    query: req.query.search_query,
+    api_key: myKey
+  };
+
+  superagent.get(url).query(superQuery).then(resultFromSuper => {
+    // console.log(resultFromSuper.body.results)
+    let movieApp = resultFromSuper.body.results.map(current => {
+
+      return new Movies(current);
+    });
+    // console.log(resultFromSuper.body);
+
+    res.send(movieApp);
+  })
+
+
+  .catch(error => {
+    res.send(error).status(500);
+  })
+})
+
+app.get('/yelp', (req, res) => {
+  const url = 'https://api.yelp.com/v3/businesses/search';
+  const myKey = 'Bearer ' + process.env.YELP_API_KEY;
+  const city = req.query.search_query;
+  console.log('hi')
+  const superQuery = {
+    term: 'restaurant',
+    location: city
+  }
+
+  superagent.get(url).set('Authorization', myKey).query(superQuery).then(resultFromSuper => {
+    let yelpApp = resultFromSuper.body.businesses.map(current => {
+      return new Yelp(current)
+    });
+  console.log(yelpApp);
+  res.send(yelpApp);
+  })
+  .catch(error => {
+    res.send(error).status(500);
+  })
+})
 
 app.get('/resetDatabase', (req, res) => {
   const query = `DROP TABLE locations;
